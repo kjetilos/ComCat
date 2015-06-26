@@ -1,7 +1,7 @@
-#include "stdafx.h"
 #include "windows.h"
-#include "Strsafe.h"
+#include "wingetopt.h"
 #include <stdint.h>
+#include <stdio.h>
 
 static const char * version = "0.1";
 #define READ_BUFFER_SIZE 32
@@ -11,11 +11,6 @@ typedef enum Command {
 	CMD_DUMP,
 	CMD_CONFIG
 } Command_t;
-
-struct Arguments {
-	const char * portName;
-	Command_t command;
-};
 
 void ComConfig(HANDLE hComm, uint32_t bauderate)
 {
@@ -103,30 +98,51 @@ void ComRead(HANDLE hComm)
 	}
 }
 
-void Usage(char * arg0)
+void usage(char * arg0)
 {
-	_tprintf(TEXT("Usage: %s <COM Port>\n"), arg0);
+	printf("Usage: %s -p <COM Port> -s <baudrate>\n", arg0);
 }
 
 #define MAX_PORT_NAME   10
 
 int main(int argc, char * argv[])
 {
-	if (argc < 2)
+	int c;
+	char * device = NULL;
+	int baudrate = -1;
+	Command_t command = CMD_READ;
+
+	while ((c = getopt(argc, argv, "p:s:d")) != -1)
 	{
-		Usage(argv[0]);
-		ExitProcess(2);
+		switch (c)
+		{
+		case 'p': 
+			device = optarg;
+			break;
+		case 's':
+			baudrate = atoi(optarg);
+			break;
+		case 'd':
+			command = CMD_DUMP;
+			break;
+		default:
+			usage(argv[0]);
+			return 1;
+		}
 	}
 
-	Arguments args = { 0 };
-	args.command = CMD_READ;
-	
+	if (device == NULL)
+	{
+		usage(argv[0]);
+		return 1;
+	}
+
 	/* The port name will be in the range \\.\COM0 - \\.\COM99 */
 	char portName[MAX_PORT_NAME];
 
-	if (sprintf_s(portName, sizeof(portName), "\\\\.\\%s", argv[1]) == -1)
+	if (sprintf_s(portName, sizeof(portName), "\\\\.\\%s", device) == -1)
 	{
-		printf("Error parsing com port argument: %s\n", argv[1]);
+		printf("Error parsing com port argument: %s\n", device);
 		ExitProcess(2);
 	}
 
@@ -145,13 +161,16 @@ int main(int argc, char * argv[])
 		ExitProcess(2);
 	}
 
-	ComConfig(hComm, 9600);
+	if (baudrate > 0)
+	{
+		ComConfig(hComm, baudrate);
+	}
 
-	if (args.command == CMD_DUMP)
+	if (command == CMD_DUMP)
 	{
 		ComDump(hComm);
 	}
-	if (args.command == CMD_READ)
+	else if (command == CMD_READ)
 	{
 		ComRead(hComm);
 	}
