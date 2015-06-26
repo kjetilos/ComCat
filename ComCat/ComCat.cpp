@@ -1,8 +1,10 @@
 #include "stdafx.h"
 #include "windows.h"
 #include "Strsafe.h"
+#include <stdint.h>
 
 static const char * version = "0.1";
+#define READ_BUFFER_SIZE 32
 
 typedef enum Command {
 	CMD_READ,
@@ -15,17 +17,32 @@ struct Arguments {
 	Command_t command;
 };
 
+void ComConfig(HANDLE hComm, uint32_t bauderate)
+{
+	DCB dcb = { 0 };
+
+	if (!GetCommState(hComm, &dcb))
+	{
+		fprintf(stderr, "Error getting current com port settings\n");
+		return;
+	}
+
+	dcb.BaudRate = bauderate;
+	
+	if (!SetCommState(hComm, &dcb))
+	{
+		fprintf(stderr, "Error when configuring com port\n");
+	}
+}
+
 void ComDump(HANDLE hComm)
 {
 	DCB dcb = { 0 };
 
 	if (!GetCommState(hComm, &dcb))
 	{
-		// Error getting current DCB settings
-	}
-	else
-	{
-
+		fprintf(stderr, "Failed to get the current com port settings\n");
+		return;
 	}
 
 	printf("BaudRate: %d\n", dcb.BaudRate);
@@ -52,21 +69,36 @@ void ComDump(HANDLE hComm)
 
 void ComRead(HANDLE hComm)
 {
+	DWORD dwCommEvent;
 	DWORD dwRead;
-	char chRead;
-	BOOL ret;
+	char buffer[READ_BUFFER_SIZE];
+
+	if (!SetCommMask(hComm, EV_RXCHAR))
+	{
+		fprintf(stderr, "Error setting EV_RXCHAR mask\n");
+		return;
+	}
 
 	while (TRUE)
 	{
-		ret = ReadFile(hComm, &chRead, sizeof(chRead), &dwRead, NULL);
-		if (ret && dwRead == 0) /* EOF */
+		if (WaitCommEvent(hComm, &dwCommEvent, NULL))
 		{
-			printf("EOF");
-//			break;
+			do {
+				if (ReadFile(hComm, &buffer[0], READ_BUFFER_SIZE, &dwRead, NULL))
+				{
+					fwrite(&buffer[0], 1, dwRead, stdout);
+				}
+				else
+				{
+					fprintf(stderr, "Error reading com port\n");
+					break;
+				}
+			} while (dwRead);
 		}
-		if (ret)
+		else
 		{
-			printf("%c", chRead);
+			fprintf(stderr, "Error in WaitCommEvent\n");
+			break;
 		}
 	}
 }
@@ -113,6 +145,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		_tprintf(TEXT("Error opening port: %s\n"), portName);
 		ExitProcess(2);
 	}
+
+	ComConfig(hComm, 9600);
 
 	if (args.command == CMD_DUMP)
 	{
