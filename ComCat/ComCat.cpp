@@ -103,14 +103,14 @@ void ComRead(HANDLE hComm)
 	}
 }
 
-void Usage(_TCHAR* arg0)
+void Usage(char * arg0)
 {
 	_tprintf(TEXT("Usage: %s <COM Port>\n"), arg0);
 }
 
 #define MAX_PORT_NAME   10
 
-int _tmain(int argc, _TCHAR* argv[])
+int main(int argc, char * argv[])
 {
 	if (argc < 2)
 	{
@@ -122,16 +122,15 @@ int _tmain(int argc, _TCHAR* argv[])
 	args.command = CMD_READ;
 	
 	/* The port name will be in the range \\.\COM0 - \\.\COM99 */
-	TCHAR portName[MAX_PORT_NAME];
+	char portName[MAX_PORT_NAME];
 
-	HRESULT hr = StringCbPrintf(portName, sizeof(portName), TEXT("\\\\.\\%s"), argv[1]);
-	if (FAILED(hr))
+	if (sprintf_s(portName, sizeof(portName), "\\\\.\\%s", argv[1]) == -1)
 	{
-		_tprintf(TEXT("Error parsing com port argument: %s\n"), argv[1]);
+		printf("Error parsing com port argument: %s\n", argv[1]);
 		ExitProcess(2);
 	}
 
-	HANDLE hComm = CreateFile(
+	HANDLE hComm = CreateFileA(
 		portName,
 		GENERIC_READ | GENERIC_WRITE,
 		0,
@@ -142,7 +141,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if (hComm == INVALID_HANDLE_VALUE)
 	{
-		_tprintf(TEXT("Error opening port: %s\n"), portName);
+		printf("Error opening port: %s\n", portName);
 		ExitProcess(2);
 	}
 
