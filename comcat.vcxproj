@@ -13,7 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B613F1B8-E586-4377-8080-E6A8C4526729}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>ComCat</RootNamespace>
+    <RootNamespace>comcat</RootNamespace>
     <ProjectName>comcat</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -80,11 +80,11 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="wingetopt.h" />
+    <ClInclude Include="src/wingetopt.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="comcat.c" />
-    <ClCompile Include="wingetopt.c" />
+    <ClCompile Include="src/comcat.c" />
+    <ClCompile Include="src/wingetopt.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
