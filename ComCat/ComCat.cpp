@@ -2,7 +2,18 @@
 #include "windows.h"
 #include "Strsafe.h"
 
-static const _TCHAR * version = TEXT("0.1");
+static const char * version = "0.1";
+
+typedef enum Command {
+	CMD_READ,
+	CMD_DUMP,
+	CMD_CONFIG
+} Command_t;
+
+struct Arguments {
+	const char * portName;
+	Command_t command;
+};
 
 void ComDump(HANDLE hComm)
 {
@@ -50,12 +61,12 @@ void ComRead(HANDLE hComm)
 		ret = ReadFile(hComm, &chRead, sizeof(chRead), &dwRead, NULL);
 		if (ret && dwRead == 0) /* EOF */
 		{
-			_tprintf(TEXT("EOF"));
+			printf("EOF");
 //			break;
 		}
 		if (ret)
 		{
-			_tprintf(TEXT("%c"), chRead);
+			printf("%c", chRead);
 		}
 	}
 }
@@ -69,13 +80,15 @@ void Usage(_TCHAR* arg0)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	if (argc != 2)
+	if (argc < 2)
 	{
 		Usage(argv[0]);
 		ExitProcess(2);
 	}
 
-	_tprintf(TEXT("ComCat Version %s\n"), version);
+	Arguments args = { 0 };
+	args.command = CMD_READ;
+	
 	/* The port name will be in the range \\.\COM0 - \\.\COM99 */
 	TCHAR portName[MAX_PORT_NAME];
 
@@ -85,14 +98,6 @@ int _tmain(int argc, _TCHAR* argv[])
 		_tprintf(TEXT("Error parsing com port argument: %s\n"), argv[1]);
 		ExitProcess(2);
 	}
-
-	/*
-	if (!SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE))
-	{
-		printf("\nERROR: Could not set control handler");
-		return 1;
-	}
-	*/
 
 	HANDLE hComm = CreateFile(
 		portName,
@@ -109,10 +114,15 @@ int _tmain(int argc, _TCHAR* argv[])
 		ExitProcess(2);
 	}
 
-	ComDump(hComm);
-//	ComRead(hComm);
+	if (args.command == CMD_DUMP)
+	{
+		ComDump(hComm);
+	}
+	if (args.command == CMD_READ)
+	{
+		ComRead(hComm);
+	}
 
 	CloseHandle(hComm);
 	return 0;
 }
-
